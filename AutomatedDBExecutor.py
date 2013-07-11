@@ -157,7 +157,8 @@ class ScriptInfo:
 
     def getQueryToFetchLastExecutedScript(self):
         return (EXECUTED_SQL_SCRIPTS %(self.scriptName, self.release, self.env))
-          
+'''          
 automatedDBExecutor = AutomatedDBExecutor("/home/user/personal/python/database_scripts", "release1", "dev")
 automatedDBExecutor.processReleaseScriptsMetaData()
 automatedDBExecutor.processReleaseScripts()
+'''
