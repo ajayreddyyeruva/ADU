@@ -6,16 +6,6 @@ import glob
 import ConfigParser
 from MySQLDBUtil import MySQLDBUtil
 
-'''
-opts, args = getopt.getopt(sys.argv[1:],"hf:r:e",["folder=","release=","env="])
-for opt,arg in opts:
-  if opt in ['-f','--folder']:
-    baseFolder = arg
-  elif opt in ['-r','--release']:
-    release = arg
-  elif opt in ['-e','--env']:
-    env = arg
-'''
 SQL_SCRIPTS_TO_BE_EXECUTED="select name, max(version) version from script_metadata where executed=0 and releas ='%s' and env='%s' group by name"
 EXECUTED_SQL_SCRIPTS="select name, max(version) version from script_metadata where executed=1 and name = '%s' and releas ='%s' and env='%s' "
 MARK_SCRIPT_AS_EXECUTED="update script_metadata set executed=1 where name='%s' and releas ='%s' and env='%s' and version<=%s"
@@ -86,8 +76,8 @@ class AutomatedDBExecutor:
             scriptPath = os.path.join(self.scriptsDir,scriptToBeExecuted.getScriptFileName())
             if os.path.isfile(scriptPath):
                 logging.info("Executing the script %s for version %s"%(scriptToBeExecuted.scriptName,str(scriptToBeExecuted.version))) 
-                self.mySQLDBUtil.executeFile(scriptPath)
-                self.mySQLEnvDBUtil.executeQuery(scriptToBeExecuted.getQueryToMarkScriptAsExecuted())
+                if self.mySQLDBUtil.executeFile(scriptPath):
+                    self.mySQLEnvDBUtil.executeQuery(scriptToBeExecuted.getQueryToMarkScriptAsExecuted())
             else:
                 logging.error("Script %s doesn't exists, please check!"%(scriptToBeExecuted.scriptName))
                 sys.exit(1)
@@ -102,8 +92,8 @@ class AutomatedDBExecutor:
             undoScriptExists = os.path.isfile(os.path.join(self.scriptsDir,lastExecutedScript.getScriptUndoFileName()))
             if undoScriptExists:
                 logging.info("Undo script exists in system executing it")
-                self.mySQLEnvDBUtil.executeFile(undoScriptPath)
-                undoScriptExecuted=1
+                if self.mySQLEnvDBUtil.executeFile(undoScriptPath):
+                    undoScriptExecuted=1
             else:
                 logging.error("Undo script %s for %s version %s does not exists. Please check!"%(lastExecutedScript.getScriptUndoFileName(), lastExecutedScript.scriptName, lastExecutedScript.version))
                 sys.exit(1)
@@ -157,8 +147,11 @@ class ScriptInfo:
 
     def getQueryToFetchLastExecutedScript(self):
         return (EXECUTED_SQL_SCRIPTS %(self.scriptName, self.release, self.env))
-'''          
+          
+        
+        
 automatedDBExecutor = AutomatedDBExecutor("/home/user/personal/python/database_scripts", "release1", "dev")
 automatedDBExecutor.processReleaseScriptsMetaData()
 automatedDBExecutor.processReleaseScripts()
+'''
 '''

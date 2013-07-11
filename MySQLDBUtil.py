@@ -2,14 +2,16 @@
 import MySQLdb as mdb, MySQLdb.cursors
 from subprocess import Popen, PIPE 
 class MySQLDBUtil:
-    
+
+    '''
     def __init__(self, dbHost,dbPort,dbUser,dbPwd,db):
         self.dbHost = dbHost
         self.dbPort = dbPort
         self.dbUser = dbUser
         self.dbPwd = dbPwd
         self.db = db
-
+    '''
+    
     def __init__(self, config, configSection):
         self.dbHost = config.get(configSection,"dbHost")
         self.dbPort = int(config.get(configSection,"dbPort"))
@@ -17,6 +19,7 @@ class MySQLDBUtil:
         self.dbPwd = config.get(configSection,"dbPwd")
         self.db = config.get(configSection,"db")
     
+
     def recordExistsUsingCountQuery(self, table, whereCondition):    
         
         con = mdb.connect(host=self.dbHost, port=self.dbPort, user=self.dbUser, passwd=self.dbPwd, db = self.db)
@@ -66,12 +69,21 @@ class MySQLDBUtil:
             cur.execute(query)
     
     def executeFile(self, sqlFilePath):
-        process = Popen('mysql -u %s -p%s -h %s %s' % (self.dbUser, self.dbPwd, self.dbHost, self.db),stdout=PIPE, stdin=PIPE, shell=True)
-        output = process.communicate('source ' + sqlFilePath)[0]
-        print output
+        executed = 1
+        process = Popen('mysql -u %s -p%s -h %s %s' % (self.dbUser, self.dbPwd, self.dbHost, self.db),stdout=PIPE, stdin=PIPE, stderr=PIPE,shell=True)
+        output = process.communicate('source ' + sqlFilePath)
+                
+        if output[1].startswith("ERROR"):
+            print "Error occured while executing SQL"
+            print output[1]
+            executed = 0
+        print output[0]
+        return executed
         
-'''    
+    
+'''
 mySQLDBUtil = MySQLDBUtil("localhost",3306,"root","root","test")
+
 
 recordExists = mySQLDBUtil.recordExistsUsingCountQuery("example", "id=1")
 
