@@ -76,8 +76,8 @@ class AutomatedDBExecutor:
             scriptPath = os.path.join(self.scriptsDir,scriptToBeExecuted.getScriptFileName())
             if os.path.isfile(scriptPath):
                 logging.info("Executing the script %s for version %s"%(scriptToBeExecuted.scriptName,str(scriptToBeExecuted.version))) 
-                if self.mySQLDBUtil.executeFile(scriptPath):
-                    self.mySQLEnvDBUtil.executeQuery(scriptToBeExecuted.getQueryToMarkScriptAsExecuted())
+                self.mySQLDBUtil.executeFile(scriptPath, logging)
+                self.mySQLEnvDBUtil.executeQuery(scriptToBeExecuted.getQueryToMarkScriptAsExecuted())
             else:
                 logging.error("Script %s doesn't exists, please check!"%(scriptToBeExecuted.scriptName))
                 sys.exit(1)
@@ -92,8 +92,8 @@ class AutomatedDBExecutor:
             undoScriptExists = os.path.isfile(os.path.join(self.scriptsDir,lastExecutedScript.getScriptUndoFileName()))
             if undoScriptExists:
                 logging.info("Undo script exists in system executing it")
-                if self.mySQLEnvDBUtil.executeFile(undoScriptPath):
-                    undoScriptExecuted=1
+                self.mySQLEnvDBUtil.executeFile(undoScriptPath,logging)
+                undoScriptExecuted=1
             else:
                 logging.error("Undo script %s for %s version %s does not exists. Please check!"%(lastExecutedScript.getScriptUndoFileName(), lastExecutedScript.scriptName, lastExecutedScript.version))
                 sys.exit(1)

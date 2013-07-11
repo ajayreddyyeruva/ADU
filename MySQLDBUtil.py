@@ -1,4 +1,4 @@
-
+import sys
 import MySQLdb as mdb, MySQLdb.cursors
 from subprocess import Popen, PIPE 
 class MySQLDBUtil:
@@ -68,17 +68,17 @@ class MySQLDBUtil:
             cur = con.cursor();
             cur.execute(query)
     
-    def executeFile(self, sqlFilePath):
+    def executeFile(self, sqlFilePath, logging):
         executed = 1
         process = Popen('mysql -u %s -p%s -h %s %s' % (self.dbUser, self.dbPwd, self.dbHost, self.db),stdout=PIPE, stdin=PIPE, stderr=PIPE,shell=True)
         output = process.communicate('source ' + sqlFilePath)
                 
         if output[1].startswith("ERROR"):
-            print "Error occured while executing SQL"
-            print output[1]
-            executed = 0
-        print output[0]
-        return executed
+            logging.error("Error occured while executing SQL")
+            logging.error(output[1])
+            sys.exit(1)
+        logging.info(output[0])
+        
         
     
 '''
