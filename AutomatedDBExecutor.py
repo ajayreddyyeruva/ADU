@@ -105,7 +105,8 @@ class AutomatedDBExecutor:
 
 class ScriptInfo:
     def __init__(self, scriptFileName, release, env):
-        self.scriptName =  scriptFileName.split('_')[2][:-4]
+        #self.scriptName =  scriptFileName.split('_')[2][:-4]
+        self.scriptName =  "_".join(str(word) for word in scriptFileName.split('_')[2:])[:-4]
         self.version =  scriptFileName.split('_')[1]
         self.release = release
         self.env = env
@@ -153,8 +154,9 @@ class ScriptInfo:
         return (EXECUTED_SQL_SCRIPTS %(self.scriptName, self.release, self.env))
           
         
-        
+'''        
 automatedDBExecutor = AutomatedDBExecutor("/home/user/personal/python/database_scripts", "release1", "dev")
 automatedDBExecutor.processReleaseScriptsMetaData()
 automatedDBExecutor.processReleaseScripts()
+'''
 
