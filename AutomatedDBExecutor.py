@@ -6,19 +6,20 @@ import glob
 import ConfigParser
 from MySQLDBUtil import MySQLDBUtil
 
-SQL_SCRIPTS_TO_BE_EXECUTED="select name, max(version) version from script_metadata where executed=0 and releas ='%s' and env='%s' group by name"
-EXECUTED_SQL_SCRIPTS="select name, max(version) version from script_metadata where executed=1 and name = '%s' and releas ='%s' and env='%s' "
-MARK_SCRIPT_AS_EXECUTED="update script_metadata set executed=1 where name='%s' and releas ='%s' and env='%s' and version<=%s"
+SQL_SCRIPTS_TO_BE_EXECUTED="select name, max(version) version from script_metadata where executed=0 and releas ='%s' and env='%s' and component='%s' group by name"
+EXECUTED_SQL_SCRIPTS="select name, max(version) version from script_metadata where executed=1 and name = '%s' and releas ='%s' and env='%s' and component='%s'"
+MARK_SCRIPT_AS_EXECUTED="update script_metadata set executed=1 where name='%s' and releas ='%s' and env='%s' and version<=%s and component='%s'"
 
 class AutomatedDBExecutor:
     
     logging.basicConfig(filename='/var/log/db_executor.log',level=logging.INFO)
     
-    def __init__(self, baseFolder, release, env):
+    def __init__(self, baseFolder, release, env, component):
         self.baseFolder = baseFolder
         self.release = release
         self.scriptsDir = os.path.join(self.baseFolder,self.release)
         self.env = env
+        self.component = component
         logging.info("I'll update db on %s for release %s", env,release)
         config = ConfigParser.RawConfigParser( )
         config.read("db.properties")
@@ -51,7 +52,7 @@ class AutomatedDBExecutor:
     #I'll add the file in meta list if not already stored
     def addScriptToMetaData(self, script):
         logging.info("Verifying if script %s already tracked", script)
-        scriptInfo = ScriptInfo(script, self.release, self.env)
+        scriptInfo = ScriptInfo(script, self.release, self.env, self.component)
         if not self.mySQLDBUtil.recordExistsUsingCountQuery("script_metadata", scriptInfo.scriptExistsQuery()):
             logging.info("Adding script %s for tracking", script)
             self.mySQLDBUtil.insertRecord("script_metadata", scriptInfo.scriptInsertQuery())
@@ -61,10 +62,10 @@ class AutomatedDBExecutor:
     #I'll process the script's,execute the new entrant scripts
     def processReleaseScripts(self):
         logging.info("\n\nVerifying what all script's needs to be executed")
-        sqlScriptsToBeExecuted = SQL_SCRIPTS_TO_BE_EXECUTED %(self.release, self.env)
+        sqlScriptsToBeExecuted = SQL_SCRIPTS_TO_BE_EXECUTED %(self.release, self.env, self.component)
         scriptsToBeExecutedDict = self.mySQLDBUtil.getResultAsDict(sqlScriptsToBeExecuted)
         for scriptToBeExecutedDict in scriptsToBeExecutedDict:
-            scriptToBeExecuted = ScriptInfo.createScriptInfo(scriptToBeExecutedDict, self.release, self.env)
+            scriptToBeExecuted = ScriptInfo.createScriptInfo(scriptToBeExecutedDict, self.release, self.env, self.component)
             self.executeScript(scriptToBeExecuted)
 
     # Do following things
@@ -104,18 +105,19 @@ class AutomatedDBExecutor:
         return undoScriptExecuted
 
 class ScriptInfo:
-    def __init__(self, scriptFileName, release, env):
+    def __init__(self, scriptFileName, release, env, component):
         #self.scriptName =  scriptFileName.split('_')[2][:-4]
         self.scriptName =  "_".join(str(word) for word in scriptFileName.split('_')[2:])[:-4]
         self.version =  scriptFileName.split('_')[1]
         self.release = release
         self.env = env
+        self.component = component
     
     @classmethod
-    def createScriptInfo(cls,scriptDict, release, env):
+    def createScriptInfo(cls,scriptDict, release, env, component):
         #scriptFileName="".join((scriptDict['name'],'_',str(scriptDict['version']),'_do.sql' ))
         scriptFileName="".join(('do','_',str(scriptDict['version']),'_',scriptDict['name'],'.sql' ))
-        scriptInfo = cls(scriptFileName, release, env)
+        scriptInfo = cls(scriptFileName, release, env, component)
         return scriptInfo
     
     def scriptExistsQuery(self):
@@ -124,6 +126,7 @@ class ScriptInfo:
         " name = '",self.scriptName,"'",
         " and version =", self.version,
         " and releas ='", self.release,"'",
+        " and component ='", self.component,"'",
         " and env ='", self.env,"'"
         ))
         return scriptExistQuery 
@@ -131,10 +134,11 @@ class ScriptInfo:
     def scriptInsertQuery(self):
         scriptInsertQuery = ""
         scriptInsertQuery = scriptInsertQuery.join((
-        "( name, version, releas, env) values",
+        "( name, version, releas, component, env) values",
         " ( '",self.scriptName,"',",
         self.version,",",
         "'",self.release,"',",
+        "'",self.component,"',",
         "'",self.env,"'",
         ")"))
         return scriptInsertQuery
@@ -148,14 +152,14 @@ class ScriptInfo:
         return "".join(('undo','_',str(self.version),'_',self.scriptName,'.sql' ))
     
     def getQueryToMarkScriptAsExecuted(self):
-        return (MARK_SCRIPT_AS_EXECUTED%(self.scriptName, self.release, self.env, self.version))
+        return (MARK_SCRIPT_AS_EXECUTED%(self.scriptName, self.release, self.env, self.version, self.component))
 
     def getQueryToFetchLastExecutedScript(self):
-        return (EXECUTED_SQL_SCRIPTS %(self.scriptName, self.release, self.env))
+        return (EXECUTED_SQL_SCRIPTS %(self.scriptName, self.release, self.env, self.component))
           
         
 '''        
-automatedDBExecutor = AutomatedDBExecutor("/home/user/personal/python/database_scripts", "release1", "dev")
+automatedDBExecutor = AutomatedDBExecutor("/home/user/personal/python/database_scripts", "release1", "dev", "ipms")
 automatedDBExecutor.processReleaseScriptsMetaData()
 automatedDBExecutor.processReleaseScripts()
 '''
