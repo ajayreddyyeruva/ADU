@@ -77,8 +77,8 @@ class AutomatedDBExecutor:
             scriptPath = os.path.join(self.scriptsDir,scriptToBeExecuted.getScriptFileName())
             if os.path.isfile(scriptPath):
                 logging.info("Executing the script %s for version %s"%(scriptToBeExecuted.scriptName,str(scriptToBeExecuted.version))) 
-                self.mySQLDBUtil.executeFile(scriptPath, logging)
-                self.mySQLEnvDBUtil.executeQuery(scriptToBeExecuted.getQueryToMarkScriptAsExecuted())
+                self.mySQLEnvDBUtil.executeFile(scriptPath, logging)
+                self.mySQLDBUtil.executeQuery(scriptToBeExecuted.getQueryToMarkScriptAsExecuted())
             else:
                 logging.error("Script %s doesn't exists, please check!"%(scriptPath))
                 sys.exit(1)
