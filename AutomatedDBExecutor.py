@@ -44,7 +44,8 @@ class AutomatedDBExecutor:
     #I'll process the script and do the entries of all the verions of script
     def processReleaseScriptMetaData(self, script):
         logging.info("\n\nUpdating metadata of script %s", script)
-        for file in glob.glob(script+"*_do.sql"):
+        #for file in glob.glob(script+"*_do.sql"):
+        for file in glob.glob("do_*"+script+"*.sql"):
             self.addScriptToMetaData(file);
         
     #I'll add the file in meta list if not already stored
@@ -79,7 +80,7 @@ class AutomatedDBExecutor:
                 self.mySQLDBUtil.executeFile(scriptPath, logging)
                 self.mySQLEnvDBUtil.executeQuery(scriptToBeExecuted.getQueryToMarkScriptAsExecuted())
             else:
-                logging.error("Script %s doesn't exists, please check!"%(scriptToBeExecuted.scriptName))
+                logging.error("Script %s doesn't exists, please check!"%(scriptPath))
                 sys.exit(1)
 
     def undoScriptExecuted(self, scriptToBeExecuted):
@@ -104,14 +105,15 @@ class AutomatedDBExecutor:
 
 class ScriptInfo:
     def __init__(self, scriptFileName, release, env):
-        self.scriptName =  scriptFileName.split('_')[0]
+        self.scriptName =  scriptFileName.split('_')[2][:-4]
         self.version =  scriptFileName.split('_')[1]
         self.release = release
         self.env = env
     
     @classmethod
     def createScriptInfo(cls,scriptDict, release, env):
-        scriptFileName="".join((scriptDict['name'],'_',str(scriptDict['version']),'_do.sql' ))
+        #scriptFileName="".join((scriptDict['name'],'_',str(scriptDict['version']),'_do.sql' ))
+        scriptFileName="".join(('do','_',str(scriptDict['version']),'_',scriptDict['name'],'.sql' ))
         scriptInfo = cls(scriptFileName, release, env)
         return scriptInfo
     
@@ -137,10 +139,12 @@ class ScriptInfo:
         return scriptInsertQuery
     
     def getScriptFileName(self):
-        return "".join((self.scriptName,'_',str(self.version),'_do.sql' )) 
+        #return "".join((self.scriptName,'_',str(self.version),'_do.sql' )) 
+        return "".join(('do','_',str(self.version),'_',self.scriptName,'.sql' ))
 
     def getScriptUndoFileName(self):
-        return "".join((self.scriptName,'_',str(self.version),'_undo.sql' )) 
+        #return "".join((self.scriptName,'_',str(self.version),'_undo.sql' )) 
+        return "".join(('undo','_',str(self.version),'_',self.scriptName,'.sql' ))
     
     def getQueryToMarkScriptAsExecuted(self):
         return (MARK_SCRIPT_AS_EXECUTED%(self.scriptName, self.release, self.env, self.version))
@@ -149,8 +153,8 @@ class ScriptInfo:
         return (EXECUTED_SQL_SCRIPTS %(self.scriptName, self.release, self.env))
           
         
-'''        
+        
 automatedDBExecutor = AutomatedDBExecutor("/home/user/personal/python/database_scripts", "release1", "dev")
 automatedDBExecutor.processReleaseScriptsMetaData()
 automatedDBExecutor.processReleaseScripts()
-'''
+
